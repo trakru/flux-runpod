@@ -1,44 +1,51 @@
-name: Build and Push Docker Image
+FROM runpod/pytorch:2.2.1-py3.10-cuda12.1.1-devel-ubuntu22.04
+WORKDIR /content
 
-on:
-  workflow_dispatch:
+# Define build argument for username (defaulting to original value if not provided)
+ARG USERNAME=comfyuser
+ARG HF_REPO=pretentioushorsefly/flux-models
+ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
+ENV MODEL_BASE_URL="https://huggingface.co/${HF_REPO}/resolve/main/models"
 
-env:
-  DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
-  IMAGE_NAME: ${{ vars.DOCKER_USERNAME }}/comfyui
-  IMAGE_TAG: ${{ github.sha }}
+# User setup (keeping original permissions)
+RUN adduser --disabled-password --gecos '' ${USERNAME} && \
+    adduser ${USERNAME} sudo && \
+    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+    chown -R ${USERNAME}:${USERNAME} /content && \
+    chmod -R 777 /content && \
+    chown -R ${USERNAME}:${USERNAME} /home && \
+    chmod -R 777 /home
 
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+# Install dependencies (keeping original packages) with cleanup
+RUN apt-get update -y && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:git-core/ppa && \
+    apt-get update -y && \
+    apt-get install -y --no-install-recommends aria2 git git-lfs unzip ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+# Switch to user
+USER ${USERNAME}
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PAT }}
+# Install Python packages with cleanup
+RUN pip install --no-cache-dir -q opencv-python imageio imageio-ffmpeg ffmpeg-python av runpod && \
+    pip install --no-cache-dir -q xformers==0.0.25 torchsde==0.2.6 einops==0.8.0 && \
+    pip install --no-cache-dir -q diffusers==0.28.0 transformers==4.41.2 accelerate==0.30.1 && \
+    rm -rf ~/.cache/pip/*
 
-      - name: Generate Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=sha,format=long
+# Clone repositories
+RUN git clone --depth 1 https://github.com/comfyanonymous/ComfyUI /content/ComfyUI && \
+    git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Manager /content/ComfyUI/custom_nodes/ComfyUI-Manager && \
+    git clone --depth 1 https://github.com/ciri/comfyui-model-downloader /content/ComfyUI/custom_nodes/comfyui-model-downloader
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:latest
-          cache-to: type=inline
+# Download models
+RUN mkdir -p /content/ComfyUI/models/{unet,vae,clip} && \
+    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M ${MODEL_BASE_URL}/unet/flux1-dev.safetensors -d /content/ComfyUI/models/unet -o flux1-dev.safetensors && \
+    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M ${MODEL_BASE_URL}/vae/ae.safetensors -d /content/ComfyUI/models/vae -o ae.safetensors && \
+    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M ${MODEL_BASE_URL}/clip/clip_l.safetensors -d /content/ComfyUI/models/clip -o clip_l.safetensors && \
+    aria2c --console-log-level=error -c -x 16 -s 16 -k 1M ${MODEL_BASE_URL}/clip/t5xxl_fp16.safetensors -d /content/ComfyUI/models/clip -o t5xxl_fp16.safetensors
+
+# Set working directory and command
+WORKDIR /content/ComfyUI
+CMD python main.py --listen --port 7860

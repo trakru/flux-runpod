@@ -1,24 +1,16 @@
-🐣 Please follow me for new updates https://twitter.com/camenduru <br />
-🔥 Please join our discord server https://discord.gg/k5BwmmvJJU <br />
-🥳 Please join my patreon community https://patreon.com/camenduru <br />
 
 ### 🍇 RunPod Templates
 
 | Template | Workflow
 | --- | --- |
-[![open_in_runpod_small](https://github.com/user-attachments/assets/620c622a-fb34-4a0a-bd0c-16ff195c90e9)](https://runpod.io/console/deploy?template=y1vexvzg7r&ref=iqi9iy8y) | [Flux.1-Dev-ComfyUI.json](https://github.com/camenduru/flux-runpod/blob/main/Flux.1-Dev-ComfyUI.json)
+[![open_in_runpod_small](https://github.com/trakru/flux-runpod/blob/03f028172b76b114d4d5d539feff5e65866068c4/Flux.1-Dev-ComfyUI.json)](https://runpod.io/console/deploy?template=y1vexvzg7r&ref=iqi9iy8y) | [Flux.1-Dev-ComfyUI.json](https://github.com/trakru/flux-runpod/blob/main/Flux.1-Dev-ComfyUI.json)
 
 ### 🧬 Code
+
+https://github.com/camenduru/flux-runpod
 https://github.com/black-forest-labs/flux <br />
 https://github.com/comfyanonymous/ComfyUI <br />
 https://github.com/ltdrdata/ComfyUI-Manager <br />
 https://github.com/ciri/comfyui-model-downloader <br />
 
-### 🌐 Page
-https://blackforestlabs.ai/
 
-### 🖼 Output
-![image](https://github.com/user-attachments/assets/07795262-a1b7-4db2-adca-037773d928c5)
-
-### 🏢 Sponsor
-https://runpod.io
